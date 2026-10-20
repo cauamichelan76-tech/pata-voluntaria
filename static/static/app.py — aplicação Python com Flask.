@@ -1,1 +1,86 @@
 
+from flask import Flask, render_template, request, redirect, url_for, flash
+import sqlite3
+from pathlib import Path
+
+app = Flask(__name__)
+app.secret_key = "chave-de-desenvolvimento"
+
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "animais.db"
+
+
+def conectar_banco():
+    conexao = sqlite3.connect(DB_PATH)
+    conexao.row_factory = sqlite3.Row
+    return conexao
+
+
+def inicializar_banco():
+    with conectar_banco() as conexao:
+        conexao.execute("""
+            CREATE TABLE IF NOT EXISTS animais (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                especie TEXT NOT NULL,
+                idade INTEGER,
+                descricao TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Disponível'
+            )
+        """)
+
+
+@app.route("/")
+def inicio():
+    filtro = request.args.get("status", "")
+
+    with conectar_banco() as conexao:
+        if filtro in ("Disponível", "Em processo", "Adotado"):
+            animais = conexao.execute(
+                "SELECT * FROM animais WHERE status = ? ORDER BY id DESC",
+                (filtro,)
+            ).fetchall()
+        else:
+            animais = conexao.execute(
+                "SELECT * FROM animais ORDER BY id DESC"
+            ).fetchall()
+
+    return render_template("index.html", animais=animais, filtro=filtro)
+
+
+@app.route("/cadastrar", methods=["POST"])
+def cadastrar():
+    nome = request.form.get("nome", "").strip()
+    especie = request.form.get("especie", "").strip()
+    idade_texto = request.form.get("idade", "").strip()
+    descricao = request.form.get("descricao", "").strip()
+
+    if not nome or especie not in ("Cão", "Gato", "Outro") or not descricao:
+        flash("Preencha os campos obrigatórios corretamente.", "erro")
+        return redirect(url_for("inicio"))
+
+    idade = None
+    if idade_texto:
+        try:
+            idade = int(idade_texto)
+            if idade < 0 or idade > 600:
+                raise ValueError
+        except ValueError:
+            flash("Informe uma idade válida em meses.", "erro")
+            return redirect(url_for("inicio"))
+
+    with conectar_banco() as conexao:
+        conexao.execute(
+            """INSERT INTO animais (nome, especie, idade, descricao, status)
+               VALUES (?, ?, ?, ?, ?)""",
+            (nome, especie, idade, descricao, "Disponível")
+        )
+
+    flash("Animal cadastrado com sucesso!", "sucesso")
+    return redirect(url_for("inicio"))
+
+
+if __name__ == "__main__":
+    inicializar_banco()
+    app.run(debug=True)
+
