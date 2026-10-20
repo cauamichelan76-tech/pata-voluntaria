@@ -1,1 +1,133 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Conheça animais que procuram um lar.">
+    <title>Pata Voluntária | Adoção responsável</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topo">
+        <a class="logo" href="{{ url_for('inicio') }}">🐾 Pata Voluntária</a>
+        <span>Adoção responsável começa com carinho.</span>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <p class="etiqueta">ADOÇÃO RESPONSÁVEL</p>
+            <h1>Um novo amigo pode estar esperando por você.</h1>
+            <p>Cadastre animais e ajude a encontrar um lar cheio de amor.</p>
+            <a class="botao" href="#cadastro">Cadastrar animal</a>
+        </section>
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensagem in mensagens %}
+                <p class="mensagem {{ categoria }}">{{ mensagem }}</p>
+            {% endfor %}
+        {% endwith %}
+
+        <section id="cadastro" class="painel">
+            <h2>Cadastrar animal</h2>
+
+            <form action="{{ url_for('cadastrar') }}" method="POST">
+                <div class="campo">
+                    <label for="nome">Nome do animal *</label>
+                    <input id="nome" name="nome" type="text"
+                           maxlength="80" required>
+                </div>
+
+                <div class="campo">
+                    <label for="especie">Espécie *</label>
+                    <select id="especie" name="especie" required>
+                        <option value="">Selecione</option>
+                        <option value="Cão">Cão</option>
+                        <option value="Gato">Gato</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="idade">Idade em meses</label>
+                    <input id="idade" name="idade" type="number"
+                           min="0" max="600">
+                </div>
+
+                <div class="campo">
+                    <label for="descricao">Descrição *</label>
+                    <textarea id="descricao" name="descricao"
+                              maxlength="1000" rows="4" required></textarea>
+                </div>
+
+                <button class="botao" type="submit">Cadastrar para adoção</button>
+            </form>
+        </section>
+
+        <section class="animais">
+            <div class="titulo-lista">
+                <div>
+                    <p class="etiqueta">ENCONTRE SEU COMPANHEIRO</p>
+                    <h2>Animais cadastrados</h2>
+                </div>
+
+                <form action="{{ url_for('inicio') }}" method="GET">
+                    <label for="status">Filtrar por status</label>
+                    <select id="status" name="status" onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        <option value="Disponível"
+                            {% if filtro == 'Disponível' %}selected{% endif %}>
+                            Disponível
+                        </option>
+                        <option value="Em processo"
+                            {% if filtro == 'Em processo' %}selected{% endif %}>
+                            Em processo
+                        </option>
+                        <option value="Adotado"
+                            {% if filtro == 'Adotado' %}selected{% endif %}>
+                            Adotado
+                        </option>
+                    </select>
+                </form>
+            </div>
+
+            {% if animais %}
+                <div class="grade">
+                    {% for animal in animais %}
+                        <article class="cartao">
+                            <div class="icone-animal">
+                                {{ '🐶' if animal['especie'] == 'Cão'
+                                   else ('🐱' if animal['especie'] == 'Gato' else '🐾') }}
+                            </div>
+                            <div class="conteudo-cartao">
+                                <span class="status">{{ animal['status'] }}</span>
+                                <h3>{{ animal['nome'] }}</h3>
+                                <p>{{ animal['especie'] }}</p>
+                                <p>
+                                    {% if animal['idade'] is not none %}
+                                        {{ animal['idade'] }} meses
+                                    {% else %}
+                                        Idade não informada
+                                    {% endif %}
+                                </p>
+                                <p class="descricao">{{ animal['descricao'] }}</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="vazio">
+                    <span>🐾</span>
+                    <h3>Nenhum animal por aqui ainda</h3>
+                    <p>Cadastre o primeiro animal e comece a transformar histórias.</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer>
+        <p>🐾 Pata Voluntária — Projeto acadêmico de Análise e Desenvolvimento de Sistemas.</p>
+    </footer>
+</body>
+</html>
+
